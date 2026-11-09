@@ -1,4 +1,3 @@
-import app from './_app';
+import app from '../server/app';
 
 export default app;
-

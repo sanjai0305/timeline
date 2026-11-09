@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useRoutineStore } from '@/store/routineStore';
 import { useAuthStore } from '@/store/authStore';
-import { MemberRole } from '../../../api/types/api';
+import { MemberRole } from '@/types/api';
 import { backButtonService } from '@/services/backButtonService';
 
 interface AddCollaboratorModalProps {

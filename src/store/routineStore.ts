@@ -15,7 +15,7 @@ import {
   subscribeToTimelineEvents,
   subscribeToTimelineMembers,
 } from '@/services/timelineApi';
-import { TimelineMember, MemberRole, TimelineEvent } from '../../api/types/api';
+import { TimelineMember, MemberRole, TimelineEvent } from '@/types/api';
 import { sortSlotsByStartTime, calculateActiveDays } from '@/utils/date';
 import { CategoryId } from '@/models/category';
 import { notificationService } from '@/services/notificationService';

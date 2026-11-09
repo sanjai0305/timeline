@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-/// <reference path="../api/types/express.d.ts" />
+/// <reference path="../server/types/express.d.ts" />
 
 interface ImportMetaEnv {
   readonly VITE_FIREBASE_API_KEY: string;

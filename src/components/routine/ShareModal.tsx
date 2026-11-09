@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useRoutineStore } from '@/store/routineStore';
 import { useAuthStore } from '@/store/authStore';
-import { MemberRole, TimelineMember } from '../../../api/types/api';
+import { MemberRole, TimelineMember } from '@/types/api';
 import { backButtonService } from '@/services/backButtonService';
 import { formatDateRange } from '@/utils/date';
 

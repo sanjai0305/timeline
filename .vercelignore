@@ -7,7 +7,7 @@ android/
 .android/
 
 # Local Dev Runner & scripts
-api/_server.ts
+server/server.ts
 
 # Tests and Coverage
 src/test/
@@ -23,4 +23,3 @@ coverage/
 # Documentation & Brain Artifacts
 brain/
 *.md
-

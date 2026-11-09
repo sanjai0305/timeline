@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { firestore } from './firebase';
 import { apiClient } from './api';
-import { TimelineDoc, TimelineEvent, TimelineMember, MemberRole } from '../../api/types/api';
+import { TimelineDoc, TimelineEvent, TimelineMember, MemberRole } from '@/types/api';
 
 export interface CreateTimelineDto {
   name: string;
