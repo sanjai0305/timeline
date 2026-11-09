@@ -1,0 +1,26 @@
+# Version control
+.git/
+.gitignore
+
+# Native mobile build directories
+android/
+.android/
+
+# Local Dev Runner & scripts
+api/_server.ts
+
+# Tests and Coverage
+src/test/
+coverage/
+*.test.ts
+*.test.tsx
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Documentation & Brain Artifacts
+brain/
+*.md
+

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createApp } from '../../api/app';
+import { createApp } from '../../api/_app';
 
 describe('Vercel API Routes & Security', () => {
   const app = createApp();
