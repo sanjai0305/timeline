@@ -1,0 +1,137 @@
+<USER_REQUEST>
+# ROUTINE PLANNER — FINAL ANDROID FIXES & APK BUILD
+
+## PROJECT INSTRUCTIONS
+
+Continue working on the existing Routine Planner project.
+
+This is an existing React + Vite + TypeScript + Capacitor Android application.
+
+Do NOT rebuild the project from scratch.
+
+Do NOT migrate to Flutter or React Native.
+
+Inspect the complete existing project before making changes.
+
+The newly uploaded Routine Planner logo is the official application logo. Use it as the source of truth for application branding.
+
+There are THREE CRITICAL ISSUES that must be fixed before generating the final Android Debug APK:
+
+1. Android back swipe navigation is not working.
+2. Scheduled alarms are not ringing at activity start times.
+3. Time selection must use a real clock-style picker instead of a basic text/time input.
+
+---
+
+# 1. OFFICIAL APPLICATION LOGO INTEGRATION
+
+Use the newly uploaded Routine Planner logo throughout Android branding.
+
+Application name:
+
+Routine Planner
+
+Brand identity:
+- Deep navy background.
+- Purple/violet gradient.
+- Glowing violet accents.
+- Premium modern visual identity.
+
+### Android Launcher Icon
+
+Create proper Android launcher icon assets from the uploaded logo.
+
+Important:
+- Use the central calendar + clock illustration as the launcher icon symbol.
+- Do not put tiny tagline text inside the launcher icon.
+- Maintain the original purple visual identity.
+- Use proper adaptive icon foreground and background assets.
+- Provide an Android monochrome icon where supported.
+- Maintain correct safe margins.
+- Do not stretch or distort the logo.
+
+### Splash Screen
+
+- Display the official Routine Planner branding.
+- Use a deep navy background.
+- Center the logo.
+- Maintain image proportions.
+- Use a smooth, subtle launch transition.
+- Avoid unnecessary loading animations.
+
+### Application Branding
+
+Use the branding consistently in:
+- Android launcher.
+- Splash screen.
+- About screen.
+- Application identity.
+- Appropriate settings and profile branding.
+
+Keep the existing application UI design consistent with the up
+<truncated 13416 bytes>
+debug/app-debug.apk
+```
+
+Verify that the APK actually exists.
+
+Install it on an Android device and test:
+
+- Application launch.
+- Official logo.
+- Back swipe.
+- Clock-style picker.
+- Alarm sound.
+- Vibration.
+- Background operation.
+- Device restart recovery.
+- Data persistence.
+
+Do not just run the web development server and declare the Android app finished.
+
+---
+
+# 10. FINAL DELIVERY REPORT
+
+At the end, provide:
+
+1. Official logo integration status.
+2. Android launcher icon status.
+3. Splash screen status.
+4. Android back swipe status.
+5. Native clock-style time picker status.
+6. Exact start-time alarm status.
+7. Alarm sound and vibration test results.
+8. Permission handling status.
+9. Background alarm test results.
+10. Device restart alarm recovery status.
+11. Application build status.
+12. Exact debug APK file path.
+
+Clearly identify any tests that could not be performed on a physical device.
+
+FINAL REQUIREMENT:
+
+Fix the existing issues, implement the actual native Android functionality, test the application, and generate the working DEBUG APK.
+
+Do not stop at UI changes, documentation, or code scaffolding.
+
+Do not claim that the alarm works unless it has actually been verified on an Android device.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-09T10:18:27+05:30.
+
+The user's current state is as follows:
+Active Document: d:\time\.env (LANGUAGE_UNSPECIFIED)
+Cursor is on line: 1
+Other open documents:
+- d:\time\android\app\src\main\res\values\styles.xml (LANGUAGE_UNSPECIFIED)
+- d:\time\tsconfig.json (LANGUAGE_UNSPECIFIED)
+- d:\time\src\utils\date.ts (LANGUAGE_UNSPECIFIED)
+- d:\time\src\features\routine-details\RoutineDetailsScreen.tsx (LANGUAGE_UNSPECIFIED)
+- d:\time\src\features\routines\MyRoutinesScreen.tsx (LANGUAGE_UNSPECIFIED)
+
+The user has uploaded 1 image(s):
+- C:/Users/sanja/.gemini/antigravity/brain/533413f2-05fe-4e28-aa42-ce2df0ce751b/.user_uploaded/media_1794199618440_e140e755.jpg
+You can embed this image in an artifact if you need the USER to review it.
+</ADDITIONAL_METADATA>

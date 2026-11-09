@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(timelineData) {
+      return isAuthenticated() && timelineData.ownerId == request.auth.uid;
+    }
+
+    function isMember(timelineData) {
+      return isAuthenticated() && (
+        timelineData.ownerId == request.auth.uid ||
+        (timelineData.memberIds != null && request.auth.uid in timelineData.memberIds)
+      );
+    }
+
+    function isPublic(timelineData) {
+      return timelineData.visibility == 'public';
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Timelines Collection
+    match /timelines/{timelineId} {
+      allow read: if isMember(resource.data) || isPublic(resource.data);
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isMember(resource.data);
+      allow delete: if isOwner(resource.data);
+
+      // Events Subcollection
+      match /events/{eventId} {
+        allow read: if isMember(get(/databases/$(database)/documents/timelines/$(timelineId)).data) ||
+                       isPublic(get(/databases/$(database)/documents/timelines/$(timelineId)).data);
+        allow create, update, delete: if isMember(get(/databases/$(database)/documents/timelines/$(timelineId)).data);
+      }
+
+      // Members Subcollection
+      match /members/{memberId} {
+        allow read: if isMember(get(/databases/$(database)/documents/timelines/$(timelineId)).data);
+        allow write: if isOwner(get(/databases/$(database)/documents/timelines/$(timelineId)).data) ||
+                        (isAuthenticated() && request.auth.uid == memberId);
+      }
+    }
+  }
+}
+

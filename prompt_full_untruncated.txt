@@ -1,0 +1,717 @@
+<USER_REQUEST>
+# ROUTINE PLANNER — FINAL ANDROID FIXES & APK BUILD
+
+## PROJECT INSTRUCTIONS
+
+Continue working on the existing Routine Planner project.
+
+This is an existing React + Vite + TypeScript + Capacitor Android application.
+
+Do NOT rebuild the project from scratch.
+
+Do NOT migrate to Flutter or React Native.
+
+Inspect the complete existing project before making changes.
+
+The newly uploaded Routine Planner logo is the official application logo. Use it as the source of truth for application branding.
+
+There are THREE CRITICAL ISSUES that must be fixed before generating the final Android Debug APK:
+
+1. Android back swipe navigation is not working.
+2. Scheduled alarms are not ringing at activity start times.
+3. Time selection must use a real clock-style picker instead of a basic text/time input.
+
+---
+
+# 1. OFFICIAL APPLICATION LOGO INTEGRATION
+
+Use the newly uploaded Routine Planner logo throughout Android branding.
+
+Application name:
+
+Routine Planner
+
+Brand identity:
+- Deep navy background.
+- Purple/violet gradient.
+- Glowing violet accents.
+- Premium modern visual identity.
+
+### Android Launcher Icon
+
+Create proper Android launcher icon assets from the uploaded logo.
+
+Important:
+- Use the central calendar + clock illustration as the launcher icon symbol.
+- Do not put tiny tagline text inside the launcher icon.
+- Maintain the original purple visual identity.
+- Use proper adaptive icon foreground and background assets.
+- Provide an Android monochrome icon where supported.
+- Maintain correct safe margins.
+- Do not stretch or distort the logo.
+
+### Splash Screen
+
+- Display the official Routine Planner branding.
+- Use a deep navy background.
+- Center the logo.
+- Maintain image proportions.
+- Use a smooth, subtle launch transition.
+- Avoid unnecessary loading animations.
+
+### Application Branding
+
+Use the branding consistently in:
+- Android launcher.
+- Splash screen.
+- About screen.
+- Application identity.
+- Appropriate settings and profile branding.
+
+Keep the existing application UI design consistent with the uploaded reference screenshot.
+
+Do not redesign existing screens.
+
+---
+
+# 2. CRITICAL — FIX ANDROID BACK SWIPE NAVIGATION
+
+Currently, swiping from the left or right edge of the Android phone does not navigate back to the previous screen.
+
+Fix this properly.
+
+This must behave like a normal Android application.
+
+### Expected Behaviour
+
+Example:
+
+Home
+  ↓
+Create Routine
+  ↓
+Select Date
+  ↓
+Add Time Slot
+  ↓
+Routine Details
+
+When the user performs Android's system back gesture:
+
+- From Routine Details → Return to previous screen.
+- From Add Time Slot modal → Close the modal.
+- From Date Picker → Close the picker.
+- From Create Routine → Return to Home or previous screen.
+- From Calendar Details → Return to Calendar.
+- From Settings subpage → Return to Settings.
+
+### Technical Implementation
+
+Use:
+- Capacitor App plugin.
+- React Router navigation history.
+- Android system back gesture integration.
+- AndroidX back handling / predictive back compatibility.
+
+Implement Capacitor's Android backButton listener correctly.
+
+Important:
+- Register the listener only once.
+- Remove listeners when appropriate.
+- Avoid duplicate listeners.
+- Ensure React Router history is updated correctly.
+- Do not blindly call navigate(-1) when no previous route exists.
+- Use the application's actual route history.
+- Close open dialogs, sheets, drawers and overlays before navigating away.
+- Handle keyboard dismissal appropriately.
+
+### Native Android Compatibility
+
+Ensure:
+- Android gesture navigation remains enabled.
+- Left-edge back swipe works.
+- Right-edge back swipe works.
+- Android navigation back button works.
+- Predictive back compatibility is maintained.
+- Back navigation does not unexpectedly close the app.
+
+Do NOT implement custom touch-based edge-swipe detection that conflicts with Android's native system gesture.
+
+Do NOT rely on deprecated onBackPressed() or KEYCODE_BACK interception.
+
+At the root screen, use the expected Android exit behaviour rather than navigating to invalid routes.
+
+Test this on an actual Android device.
+
+---
+
+# 3. CRITICAL — FIX REAL ANDROID ALARM FUNCTIONALITY
+
+Currently, alarms are not ringing at their scheduled times.
+
+Investigate the existing implementation first.
+
+Do not simply add another notification API without fixing the existing scheduling issue.
+
+## Required Technology
+
+Use the Android device's native alarm scheduling capability.
+
+Preferred architecture:
+
+React + Capacitor
+        ↓
+Native Android Capacitor Plugin
+        ↓
+Android AlarmManager
+        ↓
+AlarmReceiver
+        ↓
+Android NotificationManager
+        ↓
+Sound + Vibration + Alarm Notification
+
+Use Kotlin for native Android implementation if required.
+
+There must be NO dependency on:
+- External alarm APIs.
+- Firebase Cloud Messaging.
+- OneSignal.
+- Backend cron jobs.
+- JavaScript setTimeout.
+- A continuously running React application.
+
+The alarm must be scheduled on the Android device itself.
+
+## 3.1 EXACT START-TIME ALARM
+
+THIS IS THE MOST IMPORTANT REQUIREMENT.
+
+The alarm must ring at the exact START TIME of each activity.
+
+Do not schedule it 10 minutes before.
+
+Do not use an arbitrary reminder offset.
+
+Example routine:
+
+Start Date: 10 November 2026
+End Date: 20 November 2026
+
+Activities:
+
+05:00 AM – 06:00 AM | Morning Study
+06:00 AM – 07:00 AM | Exercise
+07:00 AM – 07:45 AM | Breakfast
+07:45 AM – 08:30 AM | Travel
+08:30 AM – 10:30 AM | Class
+
+Expected alarms:
+
+10 November:
+- 05:00 AM – Morning Study alarm.
+- 06:00 AM – Exercise alarm.
+- 07:00 AM – Breakfast alarm.
+- 07:45 AM – Travel alarm.
+- 08:30 AM – Class alarm.
+
+11 November:
+- Same alarms at their respective start times.
+
+Continue every day until 20 November, inclusive.
+
+Generate alarms for every activity on every applicable date.
+
+Only schedule future occurrences.
+
+Never schedule alarms outside the routine's selected date range.
+
+## 3.2 ALARM SOUND
+
+The notification must be audible.
+
+Requirements:
+
+- Use a proper Android notification channel.
+- Use a suitable default alarm sound.
+- Enable vibration.
+- Use high notification importance.
+- Set appropriate alarm audio attributes.
+- Display the activity name.
+- Display its scheduled time.
+- Show the Routine Planner application identity.
+
+Example:
+
+```text
+ROUTINE PLANNER
+
+⏰ Morning Study
+
+Your scheduled activity starts now.
+
+05:00 AM – 06:00 AM
+```
+
+The alarm should generate an actual sound and vibration when Android permissions and device sound settings allow it.
+
+Do not create silent notifications.
+
+Do not rely only on an in-app toast message.
+
+Do not assume that a notification was delivered just because it was scheduled.
+
+Provide a test-alarm option in Settings to verify the sound and vibration.
+
+## 3.3 EXACT ALARM PERMISSIONS
+
+Handle Android permissions correctly.
+
+Required handling:
+
+- Android 13+: POST_NOTIFICATIONS permission.
+- Android 12+: Exact alarm special access where required.
+- Check exact-alarm permission before scheduling.
+- Handle permission denied.
+- Handle permission revoked.
+- Provide a clear button to open the relevant Android settings page.
+
+Prefer SCHEDULE_EXACT_ALARM with explicit user approval for this application.
+
+Do not use USE_EXACT_ALARM without verifying that the application qualifies under Google Play's restricted-permission policy.
+
+If permission is not granted:
+- Do not falsely display "Alarm Scheduled".
+- Display a clear warning.
+- Explain how to enable alarms.
+- Allow the user to open Android settings.
+- Recheck permission when returning to the application.
+
+Use native Android AlarmManager with exact scheduling methods appropriate to the Android version and permission state.
+
+Use setExactAndAllowWhileIdle where appropriate for user-requested alarms, while respecting Android system restrictions.
+
+## 3.4 BACKGROUND ALARM SUPPORT
+
+Alarms must continue to function when:
+
+- Application is open.
+- Application is in background.
+- Application is removed from recent apps.
+- Mobile screen is locked.
+- Internet connection is unavailable.
+
+Implement alarm rescheduling after device restart.
+
+Handle:
+- BOOT_COMPLETED.
+- TIME_SET.
+- TIMEZONE_CHANGED.
+- Application update/restart.
+- Application foreground/resume.
+
+Persist scheduled alarm definitions safely.
+
+Maintain a reliable mapping between:
+- Routine ID.
+- Time Slot ID.
+- Scheduled date.
+- Alarm notification ID.
+
+Use deterministic unique IDs.
+
+Do not create duplicate alarms when opening the application multiple times.
+
+Do not lose already scheduled alarms when navigating between screens.
+
+Respect Android force-stop restrictions and clearly explain any unavoidable system limitations.
+
+## 3.5 ROUTINE EDIT / DELETE SYNCHRONIZATION
+
+When the user edits an activity:
+
+1. Cancel its previous alarm.
+2. Recalculate its new start time.
+3. Schedule the updated alarm.
+4. Verify the alarm is not duplicated.
+
+When the user deletes an activity:
+- Cancel its scheduled alarms.
+
+When the user deletes a routine:
+- Cancel all alarms associated with that routine.
+
+When the date range changes:
+- Cancel obsolete alarms.
+- Schedule all newly applicable future occurrences.
+
+When a user disables an activity's alarm:
+- Cancel only that activity's alarms.
+
+Preserve unrelated routines and alarms.
+
+---
+
+# 4. REAL CLOCK-STYLE TIME PICKER
+
+Currently, time selection does not feel like setting time on a real mobile clock.
+
+Replace the existing basic time input with a native Android clock-style time picker.
+
+### Required UI
+
+Use Android MaterialTimePicker in CLOCK mode.
+
+Implement it using a small custom Capacitor native Android plugin if necessary.
+
+The time picker must look like the normal Android alarm time selection interface.
+
+### Expected Interaction
+
+When the user taps Start Time:
+
+Open an analog clock dial.
+
+The user should be able to:
+- Select the hour using the clock dial.
+- Select minutes using the clock dial.
+- Select AM or PM.
+- Confirm the time.
+- Cancel without changing the previous value.
+
+Example:
+
+```text
+         Select Start Time
+
+              05 : 00
+
+                 12
+           11         1
+
+        10               2
+
+       9         ●         3
+
+         8             4
+              6
+
+              AM   PM
+
+         CANCEL     OK
+```
+
+This is an illustrative layout; use the actual native Material clock dial component rather than building a fake clock image.
+
+### Time Picker Requirements
+
+- Start in CLOCK mode.
+- Support 12-hour AM/PM format.
+- Respect the device's 12/24-hour setting where appropriate.
+- Use the currently saved value when editing.
+- Support minute selection.
+- Support keyboard input as an optional accessibility alternative.
+- Return the correct selected time to React.
+- Save times in a consistent 24-hour `HH:mm` format.
+- Display them in the user's preferred 12-hour or 24-hour format.
+
+Use MaterialTimePicker with the appropriate CLOCK_12H / CLOCK_24H format and INPUT_MODE_CLOCK.
+
+### Start Time and End Time
+
+Use the same native clock-style picker for:
+- Start Time.
+- End Time.
+
+Do not use different picker styles in different parts of the application.
+
+### Validation
+
+- End time must be valid relative to start time.
+- Prevent accidental invalid overlapping slots.
+- Preserve the existing routine validation rules.
+- Ensure AM/PM conversion is correct.
+- Avoid saving an incorrect time caused by timezone conversion.
+
+The picker must be fully functional on an actual Android device.
+
+---
+
+# 5. ALARM MANAGEMENT SETTINGS
+
+Add or improve a section inside Settings & Profile.
+
+Title:
+
+Alarm Settings
+
+Display:
+
+- Notification Permission Status.
+- Exact Alarm Permission Status.
+- Default Alarm Sound Status.
+- Vibration Status.
+- Test Alarm button.
+- Open Android Alarm Permissions button.
+- Upcoming Scheduled Alarms.
+
+Example:
+
+```text
+ALARM SETTINGS
+
+Notifications             Enabled
+Exact Alarms               Enabled
+Alarm Sound                Enabled
+Vibration                  Enabled
+
+[ Test Alarm ]
+
+Upcoming Alarms
+
+05:00 AM - Morning Study
+06:00 AM - Exercise
+07:00 AM - Breakfast
+```
+
+All statuses must reflect actual Android device permissions and scheduled alarms.
+
+Do not hardcode statuses.
+
+---
+
+# 6. DATA AND TIME ACCURACY
+
+Use the existing project database and repository architecture.
+
+Do not replace the existing database.
+
+Do not delete Firebase data.
+
+Do not delete existing user-created routines.
+
+Maintain consistency between:
+- Routine dates.
+- Start time.
+- End time.
+- Alarm ID.
+- Notification schedule.
+
+Use local device timezone correctly.
+
+Avoid UTC/local-time conversion bugs.
+
+For example, if the user schedules 05:00 AM in India, the alarm should trigger at 05:00 AM India local time.
+
+Check for duplicate alarms after:
+- Application reload.
+- Device restart.
+- Routine editing.
+- Timezone changes.
+
+---
+
+# 7. PRESERVE EXISTING APPLICATION FEATURES
+
+Do not break:
+
+- Home screen.
+- Create Routine.
+- My Routines.
+- Calendar View.
+- Settings & Profile.
+- Firebase Authentication.
+- Firestore integration.
+- Existing backend APIs.
+- Routine CRUD.
+- Existing sharing and collaboration.
+- Privacy Policy.
+- Terms & Conditions.
+
+Keep the previously requested removal of Load Reference Demo Data.
+
+Do not introduce demo data.
+
+Do not automatically insert sample routines.
+
+Maintain the current dark purple UI/UX.
+
+---
+
+# 8. COMPLETE TESTING — MANDATORY
+
+Do not claim success without actual verification.
+
+### Test A — Time Picker
+
+1. Open Create Routine.
+2. Select Start Time.
+3. Verify native clock dial opens.
+4. Select 05:00 AM.
+5. Confirm.
+6. Verify correct displayed time.
+7. Repeat for End Time.
+8. Verify AM/PM conversion.
+
+### Test B — Exact Alarm
+
+1. Create a routine with a start time approximately 2–3 minutes in the future.
+2. Enable the alarm.
+3. Save the routine.
+4. Verify exact-alarm permission.
+5. Verify notification permission.
+6. Close the application.
+7. Lock the phone.
+8. Wait for the scheduled time.
+9. Verify sound, vibration and notification.
+
+Repeat with the application running in the foreground.
+
+### Test C — Background
+
+Verify alarms after:
+- Minimizing the application.
+- Removing it from recent apps.
+- Locking the screen.
+- Disconnecting internet.
+
+Do not confuse removing from recents with force-stopping the application.
+
+### Test D — Back Swipe
+
+Test:
+- Left-edge swipe.
+- Right-edge swipe.
+- Android navigation back button.
+- Modal dismissal.
+- Screen-to-screen back navigation.
+- Back navigation from settings.
+
+Verify that the application does not unexpectedly close.
+
+### Test E — Multiple Alarms
+
+Create at least three activities with separate start times.
+
+Verify that all three alarms are correctly scheduled and triggered.
+
+### Test F — Device Restart
+
+Schedule future activities.
+
+Restart the Android device.
+
+Verify that future alarms are restored correctly after boot.
+
+### Test G — Editing and Deletion
+
+Edit an activity's start time.
+
+Verify that the old alarm is cancelled and the new alarm is scheduled.
+
+Delete the activity.
+
+Verify its associated alarms are cancelled.
+
+---
+
+# 9. ANDROID DEBUG APK BUILD
+
+After fixing everything, synchronize the Android project.
+
+Run:
+
+```bash
+npm install
+npm run build
+npx cap sync android
+```
+
+Open the Android project in Android Studio.
+
+Verify native dependencies and compile errors.
+
+Build:
+
+```bash
+cd android
+gradlew clean
+gradlew assembleDebug
+```
+
+For Windows:
+
+```powershell
+cd android
+.\gradlew clean
+.\gradlew assembleDebug
+```
+
+Expected APK:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Verify that the APK actually exists.
+
+Install it on an Android device and test:
+
+- Application launch.
+- Official logo.
+- Back swipe.
+- Clock-style picker.
+- Alarm sound.
+- Vibration.
+- Background operation.
+- Device restart recovery.
+- Data persistence.
+
+Do not just run the web development server and declare the Android app finished.
+
+---
+
+# 10. FINAL DELIVERY REPORT
+
+At the end, provide:
+
+1. Official logo integration status.
+2. Android launcher icon status.
+3. Splash screen status.
+4. Android back swipe status.
+5. Native clock-style time picker status.
+6. Exact start-time alarm status.
+7. Alarm sound and vibration test results.
+8. Permission handling status.
+9. Background alarm test results.
+10. Device restart alarm recovery status.
+11. Application build status.
+12. Exact debug APK file path.
+
+Clearly identify any tests that could not be performed on a physical device.
+
+FINAL REQUIREMENT:
+
+Fix the existing issues, implement the actual native Android functionality, test the application, and generate the working DEBUG APK.
+
+Do not stop at UI changes, documentation, or code scaffolding.
+
+Do not claim that the alarm works unless it has actually been verified on an Android device.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-09T10:18:27+05:30.
+
+The user's current state is as follows:
+Active Document: d:\time\.env (LANGUAGE_UNSPECIFIED)
+Cursor is on line: 1
+Other open documents:
+- d:\time\android\app\src\main\res\values\styles.xml (LANGUAGE_UNSPECIFIED)
+- d:\time\tsconfig.json (LANGUAGE_UNSPECIFIED)
+- d:\time\src\utils\date.ts (LANGUAGE_UNSPECIFIED)
+- d:\time\src\features\routine-details\RoutineDetailsScreen.tsx (LANGUAGE_UNSPECIFIED)
+- d:\time\src\features\routines\MyRoutinesScreen.tsx (LANGUAGE_UNSPECIFIED)
+
+The user has uploaded 1 image(s):
+- C:/Users/sanja/.gemini/antigravity/brain/533413f2-05fe-4e28-aa42-ce2df0ce751b/.user_uploaded/media_1794199618440_e140e755.jpg
+You can embed this image in an artifact if you need the USER to review it.
+</ADDITIONAL_METADATA>
