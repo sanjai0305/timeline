@@ -8,12 +8,33 @@ export const NOTIFICATION_CHANNEL_ID = 'routine-reminders';
 export interface ExactAlarmItem {
   alarmId: number;
   routineId: string;
+  routineName: string;
   timeSlotId: string;
   activityName: string;
   startTime: string;
   endTime: string;
+  eventType: 'START' | 'END';
   triggerTimeMillis: number;
   dateStr: string;
+}
+
+export interface NativeAlarmSettings {
+  startAlarmEnabled: boolean;
+  endAlarmEnabled: boolean;
+  ringDurationMinutes: number;
+  silentIntervalMinutes: number;
+  vibrationEnabled: boolean;
+  alarmSound: string;
+}
+
+export interface ActiveAlarmInfo {
+  isActive: boolean;
+  routineName?: string;
+  activityName?: string;
+  eventType?: string;
+  startTime?: string;
+  endTime?: string;
+  groupedDesc?: string;
 }
 
 export interface ExactAlarmPluginInterface {
@@ -25,6 +46,10 @@ export interface ExactAlarmPluginInterface {
   cancelAlarm(options: { alarmId: number }): Promise<{ cancelled: boolean }>;
   cancelRoutineAlarms(options: { routineId: string }): Promise<{ cancelledCount: number }>;
   cancelTimeSlotAlarms(options: { timeSlotId: string }): Promise<{ cancelledCount: number }>;
+  stopActiveAlarm(): Promise<{ stopped: boolean }>;
+  getActiveAlarm(): Promise<ActiveAlarmInfo>;
+  getAlarmSettings(): Promise<{ settings: NativeAlarmSettings }>;
+  updateAlarmSettings(options: Partial<NativeAlarmSettings>): Promise<{ success: boolean; settings: NativeAlarmSettings }>;
   testAlarm(): Promise<{ scheduled: boolean; triggerInSeconds: number }>;
   getUpcomingAlarms(): Promise<{ alarms: ExactAlarmItem[] }>;
 }
@@ -39,6 +64,29 @@ export const NativeExactAlarm = registerPlugin<ExactAlarmPluginInterface>('Exact
     cancelAlarm: async () => ({ cancelled: true }),
     cancelRoutineAlarms: async () => ({ cancelledCount: 0 }),
     cancelTimeSlotAlarms: async () => ({ cancelledCount: 0 }),
+    stopActiveAlarm: async () => ({ stopped: true }),
+    getActiveAlarm: async () => ({ isActive: false }),
+    getAlarmSettings: async () => ({
+      settings: {
+        startAlarmEnabled: true,
+        endAlarmEnabled: true,
+        ringDurationMinutes: 3,
+        silentIntervalMinutes: 2,
+        vibrationEnabled: true,
+        alarmSound: 'default',
+      },
+    }),
+    updateAlarmSettings: async (opts: Partial<NativeAlarmSettings>) => ({
+      success: true,
+      settings: {
+        startAlarmEnabled: opts.startAlarmEnabled ?? true,
+        endAlarmEnabled: opts.endAlarmEnabled ?? true,
+        ringDurationMinutes: opts.ringDurationMinutes ?? 3,
+        silentIntervalMinutes: opts.silentIntervalMinutes ?? 2,
+        vibrationEnabled: opts.vibrationEnabled ?? true,
+        alarmSound: opts.alarmSound ?? 'default',
+      },
+    }),
     testAlarm: async () => ({ scheduled: true, triggerInSeconds: 3 }),
     getUpcomingAlarms: async () => ({ alarms: [] }),
   },
@@ -73,7 +121,7 @@ class NotificationService {
         await LocalNotifications.createChannel({
           id: NOTIFICATION_CHANNEL_ID,
           name: 'Routine Reminders',
-          description: 'High-priority notifications and reminders for your scheduled daily routines and activities',
+          description: 'High-priority notifications and alarms for scheduled daily routines and activities',
           importance: 5, // High importance
           visibility: 1, // Public on lockscreen
           sound: 'default',
@@ -89,7 +137,7 @@ class NotificationService {
   }
 
   /**
-   * Check Android and local notification permissions.
+   * Check Android exact alarm and notification permissions.
    */
   async checkPermissions(): Promise<{ notifications: boolean; exactAlarm: boolean; canSchedule: boolean }> {
     if (Capacitor.isNativePlatform()) {
@@ -131,7 +179,8 @@ class NotificationService {
   }
 
   /**
-   * Trigger an exact test alarm (fires audible notification in 3 seconds).
+   * Trigger an exact test repeating alarm (fires in 3 seconds).
+   * Verifies 3-min ring, 2-min silent interval, notification, and STOP action!
    */
   async triggerTestAlarm(): Promise<boolean> {
     if (Capacitor.isNativePlatform()) {
@@ -150,8 +199,8 @@ class NotificationService {
           notifications: [
             {
               id: 999999,
-              title: '⏰ Test Routine Alarm',
-              body: 'Your scheduled activity starts now.\nRoutine Planner',
+              title: '⏰ Test Activity (Starting Now)',
+              body: '05:00 AM – 06:00 AM | Routine Planner\nRepeating Alarm active.',
               schedule: { at: new Date(Date.now() + 3000) },
               channelId: NOTIFICATION_CHANNEL_ID,
               sound: 'default',
@@ -164,6 +213,72 @@ class NotificationService {
       console.warn('Web notification test error:', e);
     }
     return false;
+  }
+
+  /**
+   * Immediately stops the active repeating foreground alarm (audio, vibration, timers)
+   */
+  async stopActiveAlarm(): Promise<boolean> {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const res = await NativeExactAlarm.stopActiveAlarm();
+        return res.stopped;
+      } catch (err) {
+        console.error('Error stopping active alarm:', err);
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Queries if an alarm is actively ringing/silent in the native foreground service
+   */
+  async getActiveAlarm(): Promise<ActiveAlarmInfo> {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        return await NativeExactAlarm.getActiveAlarm();
+      } catch (err) {
+        console.warn('Error fetching active alarm state:', err);
+      }
+    }
+    return { isActive: false };
+  }
+
+  /**
+   * Get configured alarm settings
+   */
+  async getAlarmSettings(): Promise<NativeAlarmSettings> {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const res = await NativeExactAlarm.getAlarmSettings();
+        return res.settings;
+      } catch (err) {
+        console.warn('Error fetching alarm settings:', err);
+      }
+    }
+    return {
+      startAlarmEnabled: true,
+      endAlarmEnabled: true,
+      ringDurationMinutes: 3,
+      silentIntervalMinutes: 2,
+      vibrationEnabled: true,
+      alarmSound: 'default',
+    };
+  }
+
+  /**
+   * Update alarm settings
+   */
+  async updateAlarmSettings(settings: Partial<NativeAlarmSettings>): Promise<boolean> {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const res = await NativeExactAlarm.updateAlarmSettings(settings);
+        return res.success;
+      } catch (err) {
+        console.warn('Error saving alarm settings:', err);
+      }
+    }
+    return true;
   }
 
   /**
@@ -182,11 +297,11 @@ class NotificationService {
   }
 
   /**
-   * Schedule all exact start-time alarms for a routine across its complete date range.
+   * Schedule all exact START and END alarms for every activity in the routine across its complete date range.
    * Cancels any previously scheduled alarms for this routine first.
    */
   async scheduleRoutineReminders(routine: RoutineWithSlots): Promise<number> {
-    // 1. Cancel existing alarms for this routine
+    // 1. Cancel existing alarms for this routine first
     await this.cancelRoutineReminders(routine.id);
 
     // If routine is inactive, do not schedule
@@ -195,6 +310,15 @@ class NotificationService {
     }
 
     await this.init();
+
+    // Fetch current settings to see if START and/or END alarms are enabled
+    const settings = await this.getAlarmSettings();
+    const isStartEnabled = settings.startAlarmEnabled !== false;
+    const isEndEnabled = settings.endAlarmEnabled !== false;
+
+    if (!isStartEnabled && !isEndEnabled) {
+      return 0;
+    }
 
     const days = getDaysInRange(routine.start_date, routine.end_date);
     const nativeAlarmsToSchedule: ExactAlarmItem[] = [];
@@ -208,61 +332,109 @@ class NotificationService {
           continue;
         }
 
-        const startMinutes = parseTimeToMinutes(slot.start_time);
-        const hours = Math.floor(startMinutes / 60);
-        const mins = startMinutes % 60;
-
-        // Construct Date object for start time on this specific date using local calendar components
         const [year, month, day] = dateStr.split('-').map(Number);
-        const slotStartDate = new Date(year, month - 1, day, hours, mins, 0, 0);
-        const triggerTimeMillis = slotStartDate.getTime();
 
-        // Exact start-time alarm: rings at the exact START TIME of the activity
-        if (triggerTimeMillis > now) {
-          const alarmId = hashNotificationId(`exact_${routine.id}_${slot.id || sIdx}_${dateStr}`);
+        // 1. Activity START Alarm
+        if (isStartEnabled && slot.start_time) {
+          const startMinutes = parseTimeToMinutes(slot.start_time);
+          const startHours = Math.floor(startMinutes / 60);
+          const startMins = startMinutes % 60;
+          const slotStartDate = new Date(year, month - 1, day, startHours, startMins, 0, 0);
+          const startTriggerMillis = slotStartDate.getTime();
 
-          nativeAlarmsToSchedule.push({
-            alarmId,
-            routineId: routine.id,
-            timeSlotId: slot.id || `slot_${sIdx}`,
-            activityName: slot.activity_name,
-            startTime: slot.start_time,
-            endTime: slot.end_time,
-            triggerTimeMillis,
-            dateStr,
-          });
+          if (startTriggerMillis > now) {
+            const startAlarmId = hashNotificationId(`start_${routine.id}_${slot.id || sIdx}_${dateStr}`);
 
-          localNotifsToSchedule.push({
-            id: alarmId,
-            title: `⏰ ${slot.activity_name}`,
-            body: `Your scheduled activity starts now.\n${slot.start_time} – ${slot.end_time}`,
-            schedule: {
-              at: slotStartDate,
-              allowWhileIdle: true,
-            },
-            channelId: NOTIFICATION_CHANNEL_ID,
-            sound: 'default',
-            extra: {
+            nativeAlarmsToSchedule.push({
+              alarmId: startAlarmId,
               routineId: routine.id,
-              slotId: slot.id,
-              date: dateStr,
-            },
-          });
+              routineName: routine.name,
+              timeSlotId: slot.id || `slot_${sIdx}`,
+              activityName: slot.activity_name,
+              startTime: slot.start_time,
+              endTime: slot.end_time,
+              eventType: 'START',
+              triggerTimeMillis: startTriggerMillis,
+              dateStr,
+            });
+
+            localNotifsToSchedule.push({
+              id: startAlarmId,
+              title: `⏰ ${slot.activity_name} (Starting Now)`,
+              body: `Your activity is starting now.\n${slot.start_time} – ${slot.end_time} • ${routine.name}`,
+              schedule: {
+                at: slotStartDate,
+                allowWhileIdle: true,
+              },
+              channelId: NOTIFICATION_CHANNEL_ID,
+              sound: 'default',
+              extra: {
+                routineId: routine.id,
+                slotId: slot.id,
+                eventType: 'START',
+                date: dateStr,
+              },
+            });
+          }
+        }
+
+        // 2. Activity END Alarm
+        if (isEndEnabled && slot.end_time) {
+          const endMinutes = parseTimeToMinutes(slot.end_time);
+          const endHours = Math.floor(endMinutes / 60);
+          const endMins = endMinutes % 60;
+          const slotEndDate = new Date(year, month - 1, day, endHours, endMins, 0, 0);
+          const endTriggerMillis = slotEndDate.getTime();
+
+          if (endTriggerMillis > now) {
+            const endAlarmId = hashNotificationId(`end_${routine.id}_${slot.id || sIdx}_${dateStr}`);
+
+            nativeAlarmsToSchedule.push({
+              alarmId: endAlarmId,
+              routineId: routine.id,
+              routineName: routine.name,
+              timeSlotId: slot.id || `slot_${sIdx}`,
+              activityName: slot.activity_name,
+              startTime: slot.start_time,
+              endTime: slot.end_time,
+              eventType: 'END',
+              triggerTimeMillis: endTriggerMillis,
+              dateStr,
+            });
+
+            localNotifsToSchedule.push({
+              id: endAlarmId,
+              title: `🏁 ${slot.activity_name} (Time Finished)`,
+              body: `Your activity time has ended.\n${slot.end_time} • ${routine.name}`,
+              schedule: {
+                at: slotEndDate,
+                allowWhileIdle: true,
+              },
+              channelId: NOTIFICATION_CHANNEL_ID,
+              sound: 'default',
+              extra: {
+                routineId: routine.id,
+                slotId: slot.id,
+                eventType: 'END',
+                date: dateStr,
+              },
+            });
+          }
         }
       }
     }
 
-    // Schedule on Native Android AlarmManager
+    // Schedule on Native Android AlarmManager (Exact Alarm Service)
     if (Capacitor.isNativePlatform() && nativeAlarmsToSchedule.length > 0) {
       try {
         const res = await NativeExactAlarm.scheduleAlarmsBatch({ alarms: nativeAlarmsToSchedule });
-        console.log(`[NotificationService] Native exact alarms scheduled: ${res.scheduledCount}`);
+        console.log(`[NotificationService] Native exact START & END alarms scheduled: ${res.scheduledCount}`);
       } catch (err) {
         console.error('[NotificationService] Error in native batch scheduling:', err);
       }
     }
 
-    // Also schedule in Capacitor LocalNotifications as supplementary receiver
+    // Also schedule in Capacitor LocalNotifications as supplementary notification
     if (Capacitor.isPluginAvailable('LocalNotifications') && localNotifsToSchedule.length > 0) {
       try {
         const BATCH_SIZE = 50;

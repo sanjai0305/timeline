@@ -9,6 +9,7 @@ import { ProfileScreen } from '@/features/profile/ProfileScreen';
 import { PrivacyPolicyScreen } from '@/features/legal/PrivacyPolicyScreen';
 import { TermsConditionsScreen } from '@/features/legal/TermsConditionsScreen';
 import { AboutScreen } from '@/features/legal/AboutScreen';
+import { ResetPasswordScreen } from '@/features/auth/ResetPasswordScreen';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -20,6 +21,7 @@ export const AppRouter: React.FC = () => {
       <Route path="/routines/:id/edit" element={<CreateRoutineScreen />} />
       <Route path="/calendar" element={<CalendarScreen />} />
       <Route path="/profile" element={<ProfileScreen />} />
+      <Route path="/reset-password" element={<ResetPasswordScreen />} />
       <Route path="/privacy" element={<PrivacyPolicyScreen />} />
       <Route path="/terms" element={<TermsConditionsScreen />} />
       <Route path="/about" element={<AboutScreen />} />

@@ -105,4 +105,38 @@ describe('Vercel API Routes & Security', () => {
     expect(jsonBody.success).toBe(false);
     expect(jsonBody.error.code).toBe('NOT_FOUND');
   });
+
+  it('rejects unauthenticated invitation to /api/timelines/test-id/invite with 401', async () => {
+    const mockReq: any = {
+      method: 'POST',
+      url: '/api/timelines/test-id/invite',
+      body: { email: 'colleague@example.com', role: 'editor' },
+      headers: {},
+    };
+
+    let statusCode = 0;
+    let jsonBody: any = null;
+
+    const mockRes: any = {
+      status(code: number) {
+        statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        jsonBody = data;
+        return this;
+      },
+      setHeader() {},
+      getHeader() {},
+    };
+
+    await new Promise<void>((resolve) => {
+      (app as any).handle(mockReq, mockRes, () => resolve());
+      if (statusCode !== 0) resolve();
+    });
+
+    expect(statusCode).toBe(401);
+    expect(jsonBody.success).toBe(false);
+    expect(jsonBody.error.code).toBe('UNAUTHORIZED');
+  });
 });

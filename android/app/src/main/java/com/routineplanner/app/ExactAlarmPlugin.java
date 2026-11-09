@@ -5,7 +5,6 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -20,7 +19,6 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -104,10 +102,12 @@ public class ExactAlarmPlugin extends Plugin {
     public void scheduleAlarm(PluginCall call) {
         Integer alarmId = call.getInt("alarmId");
         String routineId = call.getString("routineId", "");
+        String routineName = call.getString("routineName", "My Routine");
         String timeSlotId = call.getString("timeSlotId", "");
         String activityName = call.getString("activityName", "Routine Activity");
         String startTime = call.getString("startTime", "");
         String endTime = call.getString("endTime", "");
+        String eventType = call.getString("eventType", "START");
         Double triggerDouble = call.getDouble("triggerTimeMillis");
         String dateStr = call.getString("dateStr", "");
 
@@ -131,10 +131,12 @@ public class ExactAlarmPlugin extends Plugin {
         Intent intent = new Intent(getContext(), AlarmReceiver.class);
         intent.putExtra("alarmId", alarmId);
         intent.putExtra("routineId", routineId);
+        intent.putExtra("routineName", routineName);
         intent.putExtra("timeSlotId", timeSlotId);
         intent.putExtra("activityName", activityName);
         intent.putExtra("startTime", startTime);
         intent.putExtra("endTime", endTime);
+        intent.putExtra("eventType", eventType);
         intent.putExtra("dateStr", dateStr);
 
         PendingIntent pi = PendingIntent.getBroadcast(
@@ -157,14 +159,16 @@ public class ExactAlarmPlugin extends Plugin {
                 am.setExact(AlarmManager.RTC_WAKEUP, triggerTimeMillis, pi);
             }
 
-            // Save to storage
+            // Persist to storage
             AlarmStorage.AlarmItem item = new AlarmStorage.AlarmItem();
             item.alarmId = alarmId;
             item.routineId = routineId;
+            item.routineName = routineName;
             item.timeSlotId = timeSlotId;
             item.activityName = activityName;
             item.startTime = startTime;
             item.endTime = endTime;
+            item.eventType = eventType;
             item.triggerTimeMillis = triggerTimeMillis;
             item.dateStr = dateStr;
             AlarmStorage.addOrUpdateAlarm(getContext(), item);
@@ -205,20 +209,27 @@ public class ExactAlarmPlugin extends Plugin {
                 long trigger = obj.getLong("triggerTimeMillis");
                 if (trigger <= now) continue;
 
+                // Skip if already dismissed
+                if (AlarmStorage.isOccurrenceDismissed(getContext(), alarmId)) continue;
+
                 String routineId = obj.optString("routineId", "");
+                String routineName = obj.optString("routineName", "My Routine");
                 String timeSlotId = obj.optString("timeSlotId", "");
                 String activityName = obj.optString("activityName", "Routine Activity");
                 String startTime = obj.optString("startTime", "");
                 String endTime = obj.optString("endTime", "");
+                String eventType = obj.optString("eventType", "START");
                 String dateStr = obj.optString("dateStr", "");
 
                 Intent intent = new Intent(getContext(), AlarmReceiver.class);
                 intent.putExtra("alarmId", alarmId);
                 intent.putExtra("routineId", routineId);
+                intent.putExtra("routineName", routineName);
                 intent.putExtra("timeSlotId", timeSlotId);
                 intent.putExtra("activityName", activityName);
                 intent.putExtra("startTime", startTime);
                 intent.putExtra("endTime", endTime);
+                intent.putExtra("eventType", eventType);
                 intent.putExtra("dateStr", dateStr);
 
                 PendingIntent pi = PendingIntent.getBroadcast(
@@ -243,10 +254,12 @@ public class ExactAlarmPlugin extends Plugin {
                 AlarmStorage.AlarmItem item = new AlarmStorage.AlarmItem();
                 item.alarmId = alarmId;
                 item.routineId = routineId;
+                item.routineName = routineName;
                 item.timeSlotId = timeSlotId;
                 item.activityName = activityName;
                 item.startTime = startTime;
                 item.endTime = endTime;
+                item.eventType = eventType;
                 item.triggerTimeMillis = trigger;
                 item.dateStr = dateStr;
                 itemsToStore.add(item);
@@ -314,6 +327,13 @@ public class ExactAlarmPlugin extends Plugin {
             }
         }
 
+        // Also stop active alarm if it belonged to this routine
+        JSONObject active = AlarmStorage.getActiveSession(getContext());
+        if (active != null) {
+            stopActiveAlarm(call);
+            return;
+        }
+
         JSObject ret = new JSObject();
         ret.put("cancelledCount", removed.size());
         call.resolve(ret);
@@ -348,6 +368,93 @@ public class ExactAlarmPlugin extends Plugin {
         call.resolve(ret);
     }
 
+    /**
+     * Immediately stops the active repeating foreground alarm (audio, vibration, timers)
+     */
+    @PluginMethod
+    public void stopActiveAlarm(PluginCall call) {
+        try {
+            Intent stopIntent = new Intent(getContext(), AlarmService.class);
+            stopIntent.setAction(AlarmService.ACTION_STOP);
+            ContextCompat.startForegroundService(getContext(), stopIntent);
+
+            JSObject ret = new JSObject();
+            ret.put("stopped", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("Error stopping active alarm: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Checks if an alarm session is actively ringing/silent in the foreground
+     */
+    @PluginMethod
+    public void getActiveAlarm(PluginCall call) {
+        JSONObject session = AlarmStorage.getActiveSession(getContext());
+        JSObject ret = new JSObject();
+        if (session != null) {
+            ret.put("isActive", true);
+            ret.put("routineName", session.optString("routineName", ""));
+            ret.put("activityName", session.optString("activityName", ""));
+            ret.put("eventType", session.optString("eventType", "START"));
+            ret.put("startTime", session.optString("startTime", ""));
+            ret.put("endTime", session.optString("endTime", ""));
+            ret.put("groupedDesc", session.optString("groupedDesc", ""));
+        } else {
+            ret.put("isActive", false);
+        }
+        call.resolve(ret);
+    }
+
+    /**
+     * Updates alarm settings (start/end toggle, durations, vibration)
+     */
+    @PluginMethod
+    public void updateAlarmSettings(PluginCall call) {
+        AlarmStorage.AlarmSettings settings = AlarmStorage.getSettings(getContext());
+
+        if (call.hasOption("startAlarmEnabled")) {
+            settings.startAlarmEnabled = Boolean.TRUE.equals(call.getBoolean("startAlarmEnabled"));
+        }
+        if (call.hasOption("endAlarmEnabled")) {
+            settings.endAlarmEnabled = Boolean.TRUE.equals(call.getBoolean("endAlarmEnabled"));
+        }
+        if (call.hasOption("ringDurationMinutes")) {
+            settings.ringDurationMinutes = call.getInt("ringDurationMinutes", 3);
+        }
+        if (call.hasOption("silentIntervalMinutes")) {
+            settings.silentIntervalMinutes = call.getInt("silentIntervalMinutes", 2);
+        }
+        if (call.hasOption("vibrationEnabled")) {
+            settings.vibrationEnabled = Boolean.TRUE.equals(call.getBoolean("vibrationEnabled"));
+        }
+        if (call.hasOption("alarmSound")) {
+            settings.alarmSound = call.getString("alarmSound", "default");
+        }
+
+        AlarmStorage.saveSettings(getContext(), settings);
+
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        ret.put("settings", settings.toJson());
+        call.resolve(ret);
+    }
+
+    /**
+     * Retrieves current alarm settings
+     */
+    @PluginMethod
+    public void getAlarmSettings(PluginCall call) {
+        AlarmStorage.AlarmSettings settings = AlarmStorage.getSettings(getContext());
+        JSObject ret = new JSObject();
+        ret.put("settings", settings.toJson());
+        call.resolve(ret);
+    }
+
+    /**
+     * Triggers a test repeating alarm in 3 seconds to verify ringing, vibration, notification, and STOP action
+     */
     @PluginMethod
     public void testAlarm(PluginCall call) {
         AlarmManager am = getAlarmManager();
@@ -362,10 +469,12 @@ public class ExactAlarmPlugin extends Plugin {
         Intent intent = new Intent(getContext(), AlarmReceiver.class);
         intent.putExtra("alarmId", testAlarmId);
         intent.putExtra("routineId", "test_routine");
+        intent.putExtra("routineName", "Test Daily Routine");
         intent.putExtra("timeSlotId", "test_slot");
-        intent.putExtra("activityName", "Test Routine Alarm");
-        intent.putExtra("startTime", "Now");
-        intent.putExtra("endTime", "Next 1 hr");
+        intent.putExtra("activityName", "Morning Study (Test)");
+        intent.putExtra("startTime", "05:00 AM");
+        intent.putExtra("endTime", "06:00 AM");
+        intent.putExtra("eventType", "START");
         intent.putExtra("dateStr", "Today");
 
         PendingIntent pi = PendingIntent.getBroadcast(
@@ -415,4 +524,3 @@ public class ExactAlarmPlugin extends Plugin {
         call.resolve(ret);
     }
 }
-

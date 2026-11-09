@@ -5,13 +5,13 @@ interface RateLimitRecord {
   resetTime: number;
 }
 
-const ipRequests = new Map<string, RateLimitRecord>();
-
 /**
  * Lightweight sliding window rate limiter
  * Allows maxRequests per windowMs
  */
 export function rateLimiter(maxRequests = 120, windowMs = 60 * 1000) {
+  const ipRequests = new Map<string, RateLimitRecord>();
+
   return (req: Request, res: Response, next: NextFunction): void => {
     let ip = 'unknown-ip';
     try {

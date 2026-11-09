@@ -28,6 +28,11 @@ service cloud.firestore {
       allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Password Reset Challenges (Protected Server Admin SDK only - no client access)
+    match /password_reset_challenges/{challengeId} {
+      allow read, write: if false;
+    }
+
     // Timelines Collection
     match /timelines/{timelineId} {
       allow read: if isMember(resource.data) || isPublic(resource.data);

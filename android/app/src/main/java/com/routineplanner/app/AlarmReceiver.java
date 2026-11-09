@@ -1,112 +1,71 @@
 package com.routineplanner.app;
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
-import android.media.AudioAttributes;
-import android.media.RingtoneManager;
-import android.net.Uri;
-import android.os.Build;
-import androidx.core.app.NotificationCompat;
+import android.util.Log;
+import androidx.core.content.ContextCompat;
 
 public class AlarmReceiver extends BroadcastReceiver {
-    public static final String CHANNEL_ID = "routine_exact_alarms";
-    public static final String CHANNEL_NAME = "Routine Exact Alarms";
+    private static final String TAG = "AlarmReceiver";
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (intent == null) return;
+
+        String action = intent.getAction();
+        if (AlarmService.ACTION_STOP.equals(action)) {
+            Log.d(TAG, "Forwarding ACTION_STOP to AlarmService");
+            Intent stopIntent = new Intent(context, AlarmService.class);
+            stopIntent.setAction(AlarmService.ACTION_STOP);
+            ContextCompat.startForegroundService(context, stopIntent);
+            return;
+        }
+
         int alarmId = intent.getIntExtra("alarmId", (int) System.currentTimeMillis());
+
+        // Check if this specific occurrence has already been manually dismissed
+        if (AlarmStorage.isOccurrenceDismissed(context, alarmId)) {
+            Log.d(TAG, "Alarm occurrence " + alarmId + " already dismissed; ignoring.");
+            AlarmStorage.removeAlarm(context, alarmId);
+            return;
+        }
+
         String routineId = intent.getStringExtra("routineId");
+        String routineName = intent.getStringExtra("routineName");
         String timeSlotId = intent.getStringExtra("timeSlotId");
         String activityName = intent.getStringExtra("activityName");
         String startTime = intent.getStringExtra("startTime");
         String endTime = intent.getStringExtra("endTime");
+        String eventType = intent.getStringExtra("eventType");
+        String dateStr = intent.getStringExtra("dateStr");
 
-        if (activityName == null || activityName.isEmpty()) {
-            activityName = "Routine Activity";
-        }
+        if (routineName == null || routineName.isEmpty()) routineName = "My Routine";
+        if (activityName == null || activityName.isEmpty()) activityName = "Routine Activity";
+        if (eventType == null || eventType.isEmpty()) eventType = "START";
         if (startTime == null) startTime = "";
         if (endTime == null) endTime = "";
+        if (dateStr == null) dateStr = "";
 
-        NotificationManager notificationManager =
-                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        Log.d(TAG, "Alarm triggered: " + activityName + " [" + eventType + "] at " + (eventType.equals("START") ? startTime : endTime));
 
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        if (alarmSound == null) {
-            alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        // Start native repeating foreground AlarmService
+        Intent serviceIntent = new Intent(context, AlarmService.class);
+        serviceIntent.setAction(AlarmService.ACTION_START_ALARM);
+        serviceIntent.putExtra("alarmId", alarmId);
+        serviceIntent.putExtra("routineId", routineId);
+        serviceIntent.putExtra("routineName", routineName);
+        serviceIntent.putExtra("timeSlotId", timeSlotId);
+        serviceIntent.putExtra("activityName", activityName);
+        serviceIntent.putExtra("startTime", startTime);
+        serviceIntent.putExtra("endTime", endTime);
+        serviceIntent.putExtra("eventType", eventType);
+        serviceIntent.putExtra("dateStr", dateStr);
+
+        try {
+            ContextCompat.startForegroundService(context, serviceIntent);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start AlarmService", e);
         }
-
-        long[] vibrationPattern = new long[]{0, 600, 250, 600, 250, 600};
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Audible exact-time routine reminders and alarms");
-            channel.enableLights(true);
-            channel.setLightColor(Color.parseColor("#8B43EF"));
-            channel.enableVibration(true);
-            channel.setVibrationPattern(vibrationPattern);
-            channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .build();
-            channel.setSound(alarmSound, audioAttributes);
-
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-            }
-        }
-
-        // Tap action: open MainActivity
-        Intent launchIntent = new Intent(context, MainActivity.class);
-        launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        if (routineId != null) {
-            launchIntent.putExtra("routineId", routineId);
-        }
-        PendingIntent contentPendingIntent = PendingIntent.getActivity(
-                context,
-                alarmId,
-                launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        String title = "⏰ " + activityName;
-        String timeRange = (!startTime.isEmpty() && !endTime.isEmpty()) ? startTime + " – " + endTime : startTime;
-        String contentText = "Your scheduled activity starts now. " + (!timeRange.isEmpty() ? "(" + timeRange + ")" : "");
-
-        int appIcon = context.getApplicationInfo().icon;
-        if (appIcon == 0) appIcon = android.R.drawable.ic_lock_idle_alarm;
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(appIcon)
-                .setContentTitle(title)
-                .setContentText(contentText)
-                .setSubText("ROUTINE PLANNER")
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText("Your scheduled activity starts now.\n" + timeRange + "\nRoutine Planner")
-                        .setBigContentTitle(title))
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setSound(alarmSound)
-                .setVibrate(vibrationPattern)
-                .setAutoCancel(true)
-                .setContentIntent(contentPendingIntent);
-
-        if (notificationManager != null) {
-            notificationManager.notify(alarmId, builder.build());
-        }
-
-        // Clean up from storage
-        AlarmStorage.removeAlarm(context, alarmId);
     }
 }

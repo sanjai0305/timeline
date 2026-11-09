@@ -5,7 +5,7 @@ import { getFirestore } from 'firebase/firestore';
 const env = (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}) as Record<string, string | undefined>;
 
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyCoMHQ2J2mbEUAQT-pdMYgIbQkbTvr-MKFw',
+  apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyCoMHQ2JmbEUAQT-pdMYgIbQkbTvr-MKFw',
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'time-line-5bbcd.firebaseapp.com',
   projectId: env.VITE_FIREBASE_PROJECT_ID || 'time-line-5bbcd',
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'time-line-5bbcd.firebasestorage.app',

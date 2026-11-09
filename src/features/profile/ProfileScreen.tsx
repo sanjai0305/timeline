@@ -43,17 +43,40 @@ export const ProfileScreen: React.FC = () => {
   const [notifGranted, setNotifGranted] = useState<boolean>(true);
   const [exactAlarmGranted, setExactAlarmGranted] = useState<boolean>(true);
   const [upcomingAlarms, setUpcomingAlarms] = useState<ExactAlarmItem[]>([]);
+  const [alarmSettings, setAlarmSettings] = useState({
+    startAlarmEnabled: true,
+    endAlarmEnabled: true,
+    ringDurationMinutes: 3,
+    silentIntervalMinutes: 2,
+    vibrationEnabled: true,
+    alarmSound: 'default',
+  });
 
   const loadAlarmStatus = async () => {
     try {
       const perms = await notificationService.checkPermissions();
       setNotifGranted(perms.notifications);
       setExactAlarmGranted(perms.exactAlarm);
+      const settings = await notificationService.getAlarmSettings();
+      setAlarmSettings(settings);
       const upcoming = await notificationService.getUpcomingAlarms();
       setUpcomingAlarms(upcoming);
     } catch (e) {
       console.warn('Failed to load alarm settings:', e);
     }
+  };
+
+  const handleToggleAlarmSetting = async (key: string, value: any) => {
+    const updated = { ...alarmSettings, [key]: value };
+    setAlarmSettings(updated);
+    await notificationService.updateAlarmSettings(updated);
+    for (const r of routines) {
+      if (r.is_active === 1) {
+        await notificationService.scheduleRoutineReminders(r);
+      }
+    }
+    await loadAlarmStatus();
+    showStatus('Alarm settings saved');
   };
 
   useEffect(() => {
@@ -354,13 +377,99 @@ export const ProfileScreen: React.FC = () => {
           {/* Alarm Management Settings Section */}
           <div>
             <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 px-1">
-              Alarm Settings
+              Alarm Settings (Repeating Start &amp; End Alarms)
             </h3>
-            <div className="bg-surface rounded-3xl p-4 border border-white/5 space-y-3.5">
-              {/* Permission & Feature Status Grid */}
-              <div className="space-y-2.5 divide-y divide-white/5">
+            <div className="bg-surface rounded-3xl p-4 border border-white/5 space-y-4">
+              {/* Repeating Cycle Description Banner */}
+              <div className="p-3 rounded-2xl bg-brand-purple/10 border border-brand-purple/20 text-xs">
+                <div className="flex items-center space-x-2 text-white font-bold mb-1">
+                  <Bell size={15} className="text-brand-accent" />
+                  <span>Native Repeating Alarm Cycle</span>
+                </div>
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  Every start and end alarm rings continuously for <strong className="text-white">3 minutes</strong>, pauses for <strong className="text-white">2 minutes</strong>, and repeats indefinitely until <strong className="text-rose-400">STOP</strong> is pressed.
+                </p>
+              </div>
+
+              {/* Toggles & Permissions Grid */}
+              <div className="space-y-3 divide-y divide-white/5">
+                {/* Start Alarm Toggle */}
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-semibold text-text-secondary">Notifications</span>
+                  <div>
+                    <span className="text-xs font-semibold text-white">Activity Start Alarm</span>
+                    <p className="text-[10px] text-text-muted">Rings when activity starts</p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAlarmSetting('startAlarmEnabled', !alarmSettings.startAlarmEnabled)}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                      alarmSettings.startAlarmEnabled ? 'bg-brand-purple' : 'bg-white/10'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                        alarmSettings.startAlarmEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* End Alarm Toggle */}
+                <div className="flex items-center justify-between pt-3">
+                  <div>
+                    <span className="text-xs font-semibold text-white">Activity End Alarm</span>
+                    <p className="text-[10px] text-text-muted">Rings when activity finishes</p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAlarmSetting('endAlarmEnabled', !alarmSettings.endAlarmEnabled)}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                      alarmSettings.endAlarmEnabled ? 'bg-brand-purple' : 'bg-white/10'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                        alarmSettings.endAlarmEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Vibration Toggle */}
+                <div className="flex items-center justify-between pt-3">
+                  <div>
+                    <span className="text-xs font-semibold text-white">Vibration</span>
+                    <p className="text-[10px] text-text-muted">Vibrate during 3-min ring</p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAlarmSetting('vibrationEnabled', !alarmSettings.vibrationEnabled)}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                      alarmSettings.vibrationEnabled ? 'bg-brand-purple' : 'bg-white/10'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                        alarmSettings.vibrationEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Fixed Intervals & Permissions Status */}
+                <div className="flex items-center justify-between pt-3">
+                  <span className="text-xs font-semibold text-text-secondary">Ring Duration</span>
+                  <span className="text-[11px] font-bold text-white px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10">
+                    {alarmSettings.ringDurationMinutes} Minutes
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-3">
+                  <span className="text-xs font-semibold text-text-secondary">Silent Interval</span>
+                  <span className="text-[11px] font-bold text-white px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10">
+                    {alarmSettings.silentIntervalMinutes} Minutes
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-3">
+                  <span className="text-xs font-semibold text-text-secondary">Notifications Permission</span>
                   <span
                     className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${
                       notifGranted
@@ -368,12 +477,12 @@ export const ProfileScreen: React.FC = () => {
                         : 'bg-status-danger/15 border-status-danger/30 text-status-danger'
                     }`}
                   >
-                    {notifGranted ? 'Enabled' : 'Disabled'}
+                    {notifGranted ? 'Granted' : 'Missing'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-xs font-semibold text-text-secondary">Exact Alarms</span>
+                <div className="flex items-center justify-between pt-3">
+                  <span className="text-xs font-semibold text-text-secondary">Exact Alarm Permission</span>
                   <span
                     className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${
                       exactAlarmGranted
@@ -381,21 +490,7 @@ export const ProfileScreen: React.FC = () => {
                         : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
                     }`}
                   >
-                    {exactAlarmGranted ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-xs font-semibold text-text-secondary">Alarm Sound</span>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold border bg-status-success/15 border-status-success/30 text-status-success">
-                    Enabled
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-xs font-semibold text-text-secondary">Vibration</span>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold border bg-status-success/15 border-status-success/30 text-status-success">
-                    Enabled
+                    {exactAlarmGranted ? 'Granted' : 'Action Required'}
                   </span>
                 </div>
               </div>
@@ -408,7 +503,7 @@ export const ProfileScreen: React.FC = () => {
                   className="w-full py-2.5 px-4 rounded-xl bg-purple-gradient text-white text-xs font-bold flex items-center justify-center space-x-2 shadow-glow-purple-sm active:scale-[0.98] transition-all"
                 >
                   <Bell size={15} />
-                  <span>Test Alarm</span>
+                  <span>Test Repeating Alarm (Fires in 3s)</span>
                 </button>
 
                 {!notifGranted && (
@@ -417,7 +512,7 @@ export const ProfileScreen: React.FC = () => {
                     onClick={handleRequestNotifPermission}
                     className="w-full py-2 px-3 rounded-xl bg-brand-purple/20 border border-brand-purple/40 text-brand-accent text-xs font-semibold hover:bg-brand-purple/30 transition-colors"
                   >
-                    Grant Notifications
+                    Grant Notifications Permission
                   </button>
                 )}
 
@@ -426,41 +521,55 @@ export const ProfileScreen: React.FC = () => {
                   onClick={handleOpenExactAlarmSettings}
                   className="w-full py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-text-secondary hover:text-white text-xs font-medium transition-colors"
                 >
-                  Open Android Alarm Permissions
+                  Open Android Exact Alarm Settings
                 </button>
               </div>
 
               {/* Upcoming Scheduled Alarms */}
               <div className="pt-3 border-t border-white/10">
-                <h4 className="text-xs font-bold text-white mb-2 flex items-center space-x-1.5">
-                  <Clock size={14} className="text-brand-accent" />
-                  <span>Upcoming Alarms</span>
-                </h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-white flex items-center space-x-1.5">
+                    <Clock size={14} className="text-brand-accent" />
+                    <span>Upcoming Alarms ({upcomingAlarms.length})</span>
+                  </h4>
+                  <span className="text-[10px] text-text-muted">Start &amp; End</span>
+                </div>
 
                 {upcomingAlarms.length > 0 ? (
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {upcomingAlarms.slice(0, 10).map((alarm, idx) => (
+                  <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                    {upcomingAlarms.slice(0, 15).map((alarm, idx) => (
                       <div
                         key={alarm.alarmId || idx}
                         className="p-2.5 rounded-xl bg-[#131326] border border-white/5 flex items-center justify-between text-xs"
                       >
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-white">
-                            {alarm.startTime} - {alarm.activityName}
-                          </span>
-                          <span className="text-[10px] text-text-muted">
-                            {alarm.dateStr} ({alarm.startTime} – {alarm.endTime})
+                        <div className="flex flex-col min-w-0 flex-1 pr-2">
+                          <div className="flex items-center space-x-1.5">
+                            <span
+                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase ${
+                                alarm.eventType === 'END'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              }`}
+                            >
+                              {alarm.eventType || 'START'}
+                            </span>
+                            <span className="font-semibold text-white truncate">
+                              {alarm.activityName}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-text-muted mt-0.5">
+                            {alarm.dateStr} • {alarm.eventType === 'END' ? alarm.endTime : alarm.startTime}
                           </span>
                         </div>
-                        <span className="text-[10px] text-brand-accent font-semibold px-2 py-0.5 rounded-md bg-brand-purple/20">
-                          Scheduled
+                        <span className="text-[10px] text-brand-accent font-semibold px-2 py-0.5 rounded-md bg-brand-purple/20 flex-shrink-0">
+                          {alarm.eventType === 'END' ? 'End Alarm' : 'Start Alarm'}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-[11px] text-text-muted italic bg-[#131326] p-2.5 rounded-xl border border-white/5">
-                    No future alarms currently scheduled. Create or activate a routine to schedule alarms at activity start times.
+                    No future alarms currently scheduled. Create or activate a routine to schedule start and end alarms across all days.
                   </p>
                 )}
               </div>
