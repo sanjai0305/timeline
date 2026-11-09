@@ -1,4 +1,4 @@
-package com.routineplanner.app;
+package com.timeline;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -46,7 +46,8 @@ public class MaterialTimePickerPlugin extends Plugin {
                     int selectedMinute = picker.getMinute();
 
                     int h12 = selectedHour % 12;
-                    if (h12 == 0) h12 = 12;
+                    if (h12 == 0)
+                        h12 = 12;
                     String amPm = selectedHour >= 12 ? "PM" : "AM";
                     String formatted12 = String.format(Locale.US, "%02d:%02d %s", h12, selectedMinute, amPm);
                     String formatted24 = String.format(Locale.US, "%02d:%02d", selectedHour, selectedMinute);
@@ -79,4 +80,3 @@ public class MaterialTimePickerPlugin extends Plugin {
         });
     }
 }
-

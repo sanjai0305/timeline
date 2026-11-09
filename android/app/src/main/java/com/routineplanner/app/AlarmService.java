@@ -1,4 +1,4 @@
-package com.routineplanner.app;
+package com.timeline;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -37,8 +37,8 @@ public class AlarmService extends Service {
     public static final String CHANNEL_NAME = "Routine Repeating Alarms";
     public static final int NOTIFICATION_ID = 888888;
 
-    public static final String ACTION_START_ALARM = "com.routineplanner.app.ACTION_START_ALARM";
-    public static final String ACTION_STOP = "com.routineplanner.app.ACTION_STOP";
+    public static final String ACTION_START_ALARM = "com.timeline.ACTION_START_ALARM";
+    public static final String ACTION_STOP = "com.timeline.ACTION_STOP";
 
     private enum AlarmState {
         IDLE,
@@ -97,8 +97,7 @@ public class AlarmService extends Service {
             if (pm != null && (wakeLock == null || !wakeLock.isHeld())) {
                 wakeLock = pm.newWakeLock(
                         PowerManager.PARTIAL_WAKE_LOCK,
-                        "RoutinePlanner:AlarmForegroundWakeLock"
-                );
+                        "RoutinePlanner:AlarmForegroundWakeLock");
                 // Keep wake lock for up to 60 minutes
                 wakeLock.acquire(60 * 60 * 1000L);
             }
@@ -125,13 +124,12 @@ public class AlarmService extends Service {
                 NotificationChannel channel = new NotificationChannel(
                         CHANNEL_ID,
                         CHANNEL_NAME,
-                        NotificationManager.IMPORTANCE_HIGH
-                );
+                        NotificationManager.IMPORTANCE_HIGH);
                 channel.setDescription("Ongoing repeating alarms for scheduled routine activities");
                 channel.enableLights(true);
                 channel.setLightColor(Color.parseColor("#8B43EF"));
                 channel.enableVibration(false); // Vibration handled manually by service to allow 2-min silent interval
-                channel.setSound(null, null);   // Sound handled manually by MediaPlayer to allow 2-min silent interval
+                channel.setSound(null, null); // Sound handled manually by MediaPlayer to allow 2-min silent interval
                 channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
                 nm.createNotificationChannel(channel);
             }
@@ -166,14 +164,20 @@ public class AlarmService extends Service {
         String newStartTime = intent.getStringExtra("startTime");
         String newEndTime = intent.getStringExtra("endTime");
 
-        if (newRoutineName == null || newRoutineName.isEmpty()) newRoutineName = "My Routine";
-        if (newActivityName == null || newActivityName.isEmpty()) newActivityName = "Routine Activity";
-        if (newEventType == null) newEventType = "START";
-        if (newStartTime == null) newStartTime = "";
-        if (newEndTime == null) newEndTime = "";
+        if (newRoutineName == null || newRoutineName.isEmpty())
+            newRoutineName = "My Routine";
+        if (newActivityName == null || newActivityName.isEmpty())
+            newActivityName = "Routine Activity";
+        if (newEventType == null)
+            newEventType = "START";
+        if (newStartTime == null)
+            newStartTime = "";
+        if (newEndTime == null)
+            newEndTime = "";
 
         // If alarm is ALREADY running and a new simultaneous alarm arrives:
-        // Merge them into one combined session without creating competing audio streams!
+        // Merge them into one combined session without creating competing audio
+        // streams!
         if (currentState == AlarmState.RINGING || currentState == AlarmState.SILENT) {
             if (!activeAlarmIds.contains(alarmId)) {
                 activeAlarmIds.add(alarmId);
@@ -215,8 +219,7 @@ public class AlarmService extends Service {
             startForeground(
                     NOTIFICATION_ID,
                     notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            );
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
         } else {
             startForeground(NOTIFICATION_ID, notification);
         }
@@ -356,7 +359,7 @@ public class AlarmService extends Service {
         }
 
         try {
-            long[] pattern = new long[]{0, 800, 400, 800, 400, 800};
+            long[] pattern = new long[] { 0, 800, 400, 800, 400, 800 };
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vibrator.vibrate(VibrationEffect.createWaveform(pattern, 1));
             } else {
@@ -381,7 +384,8 @@ public class AlarmService extends Service {
 
     private Notification buildNotification() {
         int appIcon = getApplicationInfo().icon;
-        if (appIcon == 0) appIcon = android.R.drawable.ic_lock_idle_alarm;
+        if (appIcon == 0)
+            appIcon = android.R.drawable.ic_lock_idle_alarm;
 
         // STOP PendingIntent (directly sends ACTION_STOP to AlarmService)
         Intent stopIntent = new Intent(this, AlarmService.class);
@@ -390,8 +394,7 @@ public class AlarmService extends Service {
                 this,
                 NOTIFICATION_ID,
                 stopIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Content Tap PendingIntent (opens MainActivity)
         Intent contentIntent = new Intent(this, MainActivity.class);
@@ -400,8 +403,7 @@ public class AlarmService extends Service {
                 this,
                 NOTIFICATION_ID + 1,
                 contentIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Build Title
         String title;
@@ -414,7 +416,8 @@ public class AlarmService extends Service {
         }
 
         // Build Body Text
-        String timeDisplay = (!startTime.isEmpty() && !endTime.isEmpty()) ? startTime + " – " + endTime : scheduledTimeStr;
+        String timeDisplay = (!startTime.isEmpty() && !endTime.isEmpty()) ? startTime + " – " + endTime
+                : scheduledTimeStr;
         String statusText = (currentState == AlarmState.SILENT)
                 ? "⏸️ Paused (Resumes in 2 min)"
                 : "🔔 Alarm Ringing";
@@ -437,8 +440,7 @@ public class AlarmService extends Service {
                 .addAction(
                         android.R.drawable.ic_menu_close_clear_cancel,
                         "🛑 STOP ALARM",
-                        stopPendingIntent
-                );
+                        stopPendingIntent);
 
         return builder.build();
     }
@@ -483,7 +485,8 @@ public class AlarmService extends Service {
             if (nm != null) {
                 nm.cancel(NOTIFICATION_ID);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         stopForeground(true);
         stopSelf();
@@ -499,7 +502,8 @@ public class AlarmService extends Service {
             obj.put("endTime", endTime);
             obj.put("groupedDesc", groupedEventsDescription);
             AlarmStorage.saveActiveSession(this, obj);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     private void recoverActiveSession() {
@@ -535,4 +539,3 @@ public class AlarmService extends Service {
         return null;
     }
 }
-

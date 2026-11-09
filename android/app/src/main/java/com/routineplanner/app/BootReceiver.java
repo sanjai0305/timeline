@@ -1,4 +1,4 @@
-package com.routineplanner.app;
+package com.timeline;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -15,26 +15,28 @@ public class BootReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent == null) return;
+        if (intent == null)
+            return;
         String action = intent.getAction();
         Log.d(TAG, "Received system broadcast action: " + action);
 
-        boolean isRescheduleEvent =
-                Intent.ACTION_BOOT_COMPLETED.equals(action) ||
+        boolean isRescheduleEvent = Intent.ACTION_BOOT_COMPLETED.equals(action) ||
                 Intent.ACTION_TIME_CHANGED.equals(action) ||
                 "android.intent.action.TIME_SET".equals(action) ||
                 Intent.ACTION_TIMEZONE_CHANGED.equals(action) ||
                 Intent.ACTION_MY_PACKAGE_REPLACED.equals(action) ||
                 (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                 AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED.equals(action));
+                        AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED.equals(action));
 
-        if (!isRescheduleEvent) return;
+        if (!isRescheduleEvent)
+            return;
 
         AlarmStorage.cleanPastAlarms(context);
         List<AlarmStorage.AlarmItem> upcoming = AlarmStorage.getAllAlarms(context);
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) return;
+        if (alarmManager == null)
+            return;
 
         long now = System.currentTimeMillis();
         int rescheduledCount = 0;
@@ -60,8 +62,7 @@ public class BootReceiver extends BroadcastReceiver {
                     context,
                     item.alarmId,
                     alarmIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -69,30 +70,26 @@ public class BootReceiver extends BroadcastReceiver {
                         alarmManager.setExactAndAllowWhileIdle(
                                 AlarmManager.RTC_WAKEUP,
                                 item.triggerTimeMillis,
-                                pendingIntent
-                        );
+                                pendingIntent);
                         rescheduledCount++;
                     } else {
                         alarmManager.setAndAllowWhileIdle(
                                 AlarmManager.RTC_WAKEUP,
                                 item.triggerTimeMillis,
-                                pendingIntent
-                        );
+                                pendingIntent);
                         rescheduledCount++;
                     }
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
                             item.triggerTimeMillis,
-                            pendingIntent
-                    );
+                            pendingIntent);
                     rescheduledCount++;
                 } else {
                     alarmManager.setExact(
                             AlarmManager.RTC_WAKEUP,
                             item.triggerTimeMillis,
-                            pendingIntent
-                    );
+                            pendingIntent);
                     rescheduledCount++;
                 }
             } catch (Exception e) {

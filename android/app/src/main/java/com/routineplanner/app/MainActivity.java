@@ -1,4 +1,4 @@
-package com.routineplanner.app;
+package com.timeline;
 
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;

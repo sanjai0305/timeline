@@ -1,4 +1,4 @@
-package com.routineplanner.app;
+package com.timeline;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,7 +11,8 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent == null) return;
+        if (intent == null)
+            return;
 
         String action = intent.getAction();
         if (AlarmService.ACTION_STOP.equals(action)) {
@@ -40,14 +41,21 @@ public class AlarmReceiver extends BroadcastReceiver {
         String eventType = intent.getStringExtra("eventType");
         String dateStr = intent.getStringExtra("dateStr");
 
-        if (routineName == null || routineName.isEmpty()) routineName = "My Routine";
-        if (activityName == null || activityName.isEmpty()) activityName = "Routine Activity";
-        if (eventType == null || eventType.isEmpty()) eventType = "START";
-        if (startTime == null) startTime = "";
-        if (endTime == null) endTime = "";
-        if (dateStr == null) dateStr = "";
+        if (routineName == null || routineName.isEmpty())
+            routineName = "My Routine";
+        if (activityName == null || activityName.isEmpty())
+            activityName = "Routine Activity";
+        if (eventType == null || eventType.isEmpty())
+            eventType = "START";
+        if (startTime == null)
+            startTime = "";
+        if (endTime == null)
+            endTime = "";
+        if (dateStr == null)
+            dateStr = "";
 
-        Log.d(TAG, "Alarm triggered: " + activityName + " [" + eventType + "] at " + (eventType.equals("START") ? startTime : endTime));
+        Log.d(TAG, "Alarm triggered: " + activityName + " [" + eventType + "] at "
+                + (eventType.equals("START") ? startTime : endTime));
 
         // Start native repeating foreground AlarmService
         Intent serviceIntent = new Intent(context, AlarmService.class);

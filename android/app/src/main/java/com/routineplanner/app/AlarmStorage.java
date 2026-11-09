@@ -1,4 +1,4 @@
-package com.routineplanner.app;
+package com.timeline;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -126,7 +126,8 @@ public class AlarmStorage {
                     list.add(item);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return list;
     }
 
@@ -217,7 +218,8 @@ public class AlarmStorage {
         long now = System.currentTimeMillis();
         List<AlarmItem> upcoming = new ArrayList<>();
         for (AlarmItem item : list) {
-            if (item.triggerTimeMillis > now - (15 * 60 * 1000L)) { // Keep alarms triggered in last 15 mins for active state
+            if (item.triggerTimeMillis > now - (15 * 60 * 1000L)) { // Keep alarms triggered in last 15 mins for active
+                                                                    // state
                 upcoming.add(item);
             }
         }
@@ -248,7 +250,8 @@ public class AlarmStorage {
 
     public static synchronized JSONObject getActiveSession(Context context) {
         String raw = getPrefs(context).getString(KEY_ACTIVE_SESSION, "");
-        if (raw == null || raw.isEmpty()) return null;
+        if (raw == null || raw.isEmpty())
+            return null;
         try {
             return new JSONObject(raw);
         } catch (Exception e) {

@@ -1,4 +1,4 @@
-package com.routineplanner.app;
+package com.timeline;
 
 import android.Manifest;
 import android.app.AlarmManager;
@@ -24,15 +24,9 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-@CapacitorPlugin(
-    name = "ExactAlarm",
-    permissions = {
-        @Permission(
-            strings = { Manifest.permission.POST_NOTIFICATIONS },
-            alias = "notifications"
-        )
-    }
-)
+@CapacitorPlugin(name = "ExactAlarm", permissions = {
+        @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notifications")
+})
 public class ExactAlarmPlugin extends Plugin {
 
     private AlarmManager getAlarmManager() {
@@ -143,8 +137,7 @@ public class ExactAlarmPlugin extends Plugin {
                 getContext(),
                 alarmId,
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -207,10 +200,12 @@ public class ExactAlarmPlugin extends Plugin {
                 JSONObject obj = arr.getJSONObject(i);
                 int alarmId = obj.getInt("alarmId");
                 long trigger = obj.getLong("triggerTimeMillis");
-                if (trigger <= now) continue;
+                if (trigger <= now)
+                    continue;
 
                 // Skip if already dismissed
-                if (AlarmStorage.isOccurrenceDismissed(getContext(), alarmId)) continue;
+                if (AlarmStorage.isOccurrenceDismissed(getContext(), alarmId))
+                    continue;
 
                 String routineId = obj.optString("routineId", "");
                 String routineName = obj.optString("routineName", "My Routine");
@@ -236,8 +231,7 @@ public class ExactAlarmPlugin extends Plugin {
                         getContext(),
                         alarmId,
                         intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                );
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     if (am.canScheduleExactAlarms()) {
@@ -292,8 +286,7 @@ public class ExactAlarmPlugin extends Plugin {
                     getContext(),
                     alarmId,
                     intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             am.cancel(pi);
         }
 
@@ -321,8 +314,7 @@ public class ExactAlarmPlugin extends Plugin {
                         getContext(),
                         item.alarmId,
                         intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                );
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
                 am.cancel(pi);
             }
         }
@@ -357,8 +349,7 @@ public class ExactAlarmPlugin extends Plugin {
                         getContext(),
                         item.alarmId,
                         intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                );
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
                 am.cancel(pi);
             }
         }
@@ -369,7 +360,8 @@ public class ExactAlarmPlugin extends Plugin {
     }
 
     /**
-     * Immediately stops the active repeating foreground alarm (audio, vibration, timers)
+     * Immediately stops the active repeating foreground alarm (audio, vibration,
+     * timers)
      */
     @PluginMethod
     public void stopActiveAlarm(PluginCall call) {
@@ -453,7 +445,8 @@ public class ExactAlarmPlugin extends Plugin {
     }
 
     /**
-     * Triggers a test repeating alarm in 3 seconds to verify ringing, vibration, notification, and STOP action
+     * Triggers a test repeating alarm in 3 seconds to verify ringing, vibration,
+     * notification, and STOP action
      */
     @PluginMethod
     public void testAlarm(PluginCall call) {
@@ -481,8 +474,7 @@ public class ExactAlarmPlugin extends Plugin {
                 getContext(),
                 testAlarmId,
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
