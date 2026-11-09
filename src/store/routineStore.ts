@@ -50,6 +50,10 @@ interface RoutineState {
   subscribeToRealtimeTimeline: (timelineId: string) => () => void;
 }
 
+// In-flight request deduplication cache for collaborative members
+let activeFetchTimelineId: string | null = null;
+let activeFetchPromise: Promise<void> | null = null;
+
 export const useRoutineStore = create<RoutineState>((set, get) => ({
   routines: [],
   selectedRoutine: null,
@@ -432,14 +436,28 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
       set({ selectedMembers: [] });
       return;
     }
-    try {
-      const members = await fetchMembersApi(timelineId);
-      set({ selectedMembers: Array.isArray(members) ? members : [] });
-    } catch (err) {
-      console.warn('[Store] Could not fetch members:', err);
-      set({ selectedMembers: [] });
-      throw err;
+
+    // Deduplicate concurrent in-flight requests for the same timeline
+    if (activeFetchTimelineId === timelineId && activeFetchPromise) {
+      return activeFetchPromise;
     }
+
+    activeFetchTimelineId = timelineId;
+    activeFetchPromise = (async () => {
+      try {
+        const members = await fetchMembersApi(timelineId);
+        set({ selectedMembers: Array.isArray(members) ? members : [] });
+      } catch (err: any) {
+        console.warn('[Store] Could not fetch members:', err);
+        set({ selectedMembers: [] });
+        throw err;
+      } finally {
+        activeFetchTimelineId = null;
+        activeFetchPromise = null;
+      }
+    })();
+
+    return activeFetchPromise;
   },
 
   inviteMember: async (timelineId: string, email: string, role: MemberRole = 'editor') => {

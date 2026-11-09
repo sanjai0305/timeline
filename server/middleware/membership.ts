@@ -10,6 +10,10 @@ const ROLE_HIERARCHY: Record<MemberRole, number> = {
 
 export function requireTimelineRole(minRole: MemberRole = 'viewer') {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
     const timelineId = req.params.timelineId as string;
     const userId = req.user?.uid;
 

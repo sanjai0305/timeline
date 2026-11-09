@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.routineplanner.app',
+  appId: 'com.timeline',
   appName: 'Routine Planner',
   webDir: 'dist',
   plugins: {

@@ -169,7 +169,7 @@ export const ShareModalContent: React.FC<ShareModalProps> = ({
         // Timeline not found in cloud yet (stored locally)
         setLoadError('This routine is stored locally on your device. Sync to Cloud to invite collaborators.');
       } else {
-        setLoadError('Unable to load collaborators.');
+        setLoadError(err?.message || 'Unable to load collaborators. Please check your network connection.');
       }
     }
   }, [timelineId, fetchMembers]);

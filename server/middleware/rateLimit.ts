@@ -8,11 +8,17 @@ interface RateLimitRecord {
 /**
  * Lightweight sliding window rate limiter
  * Allows maxRequests per windowMs
+ * Skips preflight OPTIONS requests
  */
-export function rateLimiter(maxRequests = 120, windowMs = 60 * 1000) {
+export function rateLimiter(maxRequests = 150, windowMs = 60 * 1000) {
   const ipRequests = new Map<string, RateLimitRecord>();
 
   return (req: Request, res: Response, next: NextFunction): void => {
+    // OPTIONS preflight requests must never be blocked or count against rate limits
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
     let ip = 'unknown-ip';
     try {
       ip =

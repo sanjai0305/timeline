@@ -1,6 +1,7 @@
 import { auth } from './firebase';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+const cleanBaseUrl = rawBaseUrl.replace(/\/+$/, '');
 
 export interface ApiFetchOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -38,9 +39,9 @@ export async function apiClient<T = any>(endpoint: string, options: ApiFetchOpti
     }
   }
 
-  // Ensure clean path
+  // Ensure clean path without duplicate slashes
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${BASE_URL}${normalizedEndpoint}`;
+  const url = cleanBaseUrl ? `${cleanBaseUrl}${normalizedEndpoint}` : normalizedEndpoint;
 
   try {
     const response = await fetch(url, {

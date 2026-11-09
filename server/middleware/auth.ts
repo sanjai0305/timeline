@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { auth } from '../config/firebaseAdmin';
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Preflight OPTIONS requests must never require authentication
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -36,4 +41,3 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     });
   }
 }
-
