@@ -1,7 +1,10 @@
-import * as admin from 'firebase-admin';
+import adminModule from 'firebase-admin';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+// Support both ESM default import and CJS exports
+const admin: typeof adminModule = (adminModule as any).default || adminModule;
 
 const projectId = process.env.FIREBASE_PROJECT_ID || 'time-line-5bbcd';
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -12,7 +15,9 @@ if (privateKey) {
   privateKey = privateKey.replace(/\\n/g, '\n');
 }
 
-if (!admin.apps.length) {
+const apps = admin.apps || [];
+
+if (!apps.length) {
   try {
     if (clientEmail && privateKey) {
       admin.initializeApp({
@@ -38,4 +43,4 @@ if (!admin.apps.length) {
 export const firebaseAdmin = admin;
 export const auth = admin.auth();
 export const db = admin.firestore();
-
+export default admin;
