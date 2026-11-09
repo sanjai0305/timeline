@@ -10,6 +10,7 @@ import { PrivacyPolicyScreen } from '@/features/legal/PrivacyPolicyScreen';
 import { TermsConditionsScreen } from '@/features/legal/TermsConditionsScreen';
 import { AboutScreen } from '@/features/legal/AboutScreen';
 import { ResetPasswordScreen } from '@/features/auth/ResetPasswordScreen';
+import { CollaborationScreen } from '@/features/routines/CollaborationScreen';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -17,6 +18,8 @@ export const AppRouter: React.FC = () => {
       <Route path="/" element={<HomeScreen />} />
       <Route path="/routines" element={<MyRoutinesScreen />} />
       <Route path="/routines/:id" element={<RoutineDetailsScreen />} />
+      <Route path="/routines/:id/collaborate" element={<CollaborationScreen />} />
+      <Route path="/routines/:id/share" element={<CollaborationScreen />} />
       <Route path="/create" element={<CreateRoutineScreen />} />
       <Route path="/routines/:id/edit" element={<CreateRoutineScreen />} />
       <Route path="/calendar" element={<CalendarScreen />} />

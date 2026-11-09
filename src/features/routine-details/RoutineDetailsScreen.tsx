@@ -448,6 +448,8 @@ export const RoutineDetailsScreen: React.FC = () => {
         isOpen={isShareModalOpen}
         timelineId={routine.id}
         timelineName={routine.name}
+        startDate={routine.start_date}
+        endDate={routine.end_date}
         userRole={routine.role || 'owner'}
         onClose={() => setIsShareModalOpen(false)}
       />

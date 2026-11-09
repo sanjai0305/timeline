@@ -428,11 +428,17 @@ export const useRoutineStore = create<RoutineState>((set, get) => ({
 
   // Collaborative Methods
   fetchMembers: async (timelineId: string) => {
+    if (!timelineId) {
+      set({ selectedMembers: [] });
+      return;
+    }
     try {
       const members = await fetchMembersApi(timelineId);
-      set({ selectedMembers: members });
+      set({ selectedMembers: Array.isArray(members) ? members : [] });
     } catch (err) {
       console.warn('[Store] Could not fetch members:', err);
+      set({ selectedMembers: [] });
+      throw err;
     }
   },
 
