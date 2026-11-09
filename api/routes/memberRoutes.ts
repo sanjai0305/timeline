@@ -32,8 +32,8 @@ router.get('/', requireTimelineRole('viewer'), async (req: Request, res: Respons
   }
 });
 
-// POST /api/timelines/:timelineId/invite - invite member by email
-router.post('/invite', requireTimelineRole('owner'), async (req: Request, res: Response) => {
+// POST /api/timelines/:timelineId/invite or /api/timelines/:timelineId/members/invite - invite member by email
+router.post(['/', '/invite'], requireTimelineRole('owner'), async (req: Request, res: Response) => {
   const timelineId = req.params.timelineId as string;
   const { email, role = 'editor' } = req.body;
 
